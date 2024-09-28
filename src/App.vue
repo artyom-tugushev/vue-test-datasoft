@@ -47,7 +47,6 @@ export default {
       socket: null,
       activeEventId: null,
       roomStatus: "",
-      currentBroadcastStatus: null,
       statusMessages: {
         active: (title) => `АКТИВНАЯ СЕССИЯ: ${title}`,
         soon: "ТРАНСЛЯЦИЯ СКОРО НАЧНЕТСЯ",
@@ -55,14 +54,6 @@ export default {
         ended: "ТРАНСЛЯЦИЯ ЗАКОНЧЕНА",
       },
     };
-  },
-  watch: {
-    roomStatus() {
-      this.updateBroadcastStatus();
-    },
-    activeEventId() {
-      this.updateBroadcastStatus();
-    },
   },
   computed: {
     statusClass() {
@@ -76,6 +67,31 @@ export default {
         return "blue";
       } else if (status === this.statusMessages.ended) {
         return "red";
+      }
+      return "";
+    },
+    currentBroadcastStatus() {
+      const activeEvent = this.roomData.schedule?.find(
+        (event) => event.id === +this.activeEventId
+      );
+      const eventTitle = activeEvent?.item.title.trim().toUpperCase();
+
+      if (this.roomData.is_running) {
+        return this.statusMessages.active(eventTitle);
+      } else if (
+        !this.roomData.is_running &&
+        !this.roomData.is_ended &&
+        this.roomData.elapsed_time === "0"
+      ) {
+        return this.statusMessages.soon;
+      } else if (
+        !this.roomData.is_running &&
+        !this.roomData.is_ended &&
+        this.roomData.elapsed_time > "0"
+      ) {
+        return this.statusMessages.paused;
+      } else if (this.roomData.is_ended) {
+        return this.statusMessages.ended;
       }
       return "";
     },
@@ -136,31 +152,6 @@ export default {
       } else if (status === "stop") {
         this.roomData.is_running = false;
         this.roomData.is_ended = true;
-      }
-    },
-
-    updateBroadcastStatus() {
-      const activeEvent = this.roomData.schedule.find(
-        (event) => event.id === +this.activeEventId
-      );
-      const eventTitle = activeEvent?.item.title.trim().toUpperCase();
-
-      if (this.roomData.is_running) {
-        this.currentBroadcastStatus = this.statusMessages.active(eventTitle);
-      } else if (
-        !this.roomData.is_running &&
-        !this.roomData.is_ended &&
-        this.roomData.elapsed_time === "0"
-      ) {
-        this.currentBroadcastStatus = this.statusMessages.soon;
-      } else if (
-        !this.roomData.is_running &&
-        !this.roomData.is_ended &&
-        this.roomData.elapsed_time > "0"
-      ) {
-        this.currentBroadcastStatus = this.statusMessages.paused;
-      } else if (this.roomData.is_ended) {
-        this.currentBroadcastStatus = this.statusMessages.ended;
       }
     },
   },
